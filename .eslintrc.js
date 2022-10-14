@@ -4,15 +4,8 @@ module.exports = {
   plugins: ["my-lint"],
   rules: {
     "no-undef": 0,
-    "my-lint/func-prefix-matching": [
-      "error",
-      {
-        include: [],
-        exclude: ["excludeSomeFunction"],
-        message: "",
-      },
-    ],
-    "my-lint/order-test": [
+    "my-lint/func-prefix-matching": "error",
+    "my-lint/attribute-order-template": [
       "error",
       {
         order: [
@@ -21,12 +14,12 @@ module.exports = {
           "LIST_RENDERING",
           "UNIQUE",
           ["TWO_WAY_BINDING", "OTHER_DIRECTIVES", "RENDER_MODIFIERS"],
-          "BIND_ATTR", // :any-bound-prop="..."
-          "OTHER_ATTR", // any-bound-prop="..."
-          "BOOL_ATTR", // any-boolean-prop
+          "BIND_ATTR",
+          "OTHER_ATTR",
+          "BOOL_ATTR",
           "EVENTS",
         ],
-        alphabetical: false,
+        alphabetical: true,
       },
     ],
   },

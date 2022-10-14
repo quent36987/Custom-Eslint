@@ -4,9 +4,7 @@ const { onFuncPrefixMatchingCreate } = require("./funcPrefixMatching");
 
 module.exports = {
     rules: {
-        "order-test": require("./orderTest"),
-        "func-prefix-matching": {
-            create: onFuncPrefixMatchingCreate,
-        },
+        "attribute-order-template": require("./attribute-order-template"),
+        "func-prefix-matching": require("./funcPrefixMatching")
     },
 };

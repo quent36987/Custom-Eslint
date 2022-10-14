@@ -1,33 +1,43 @@
 /* eslint-disable */
 
-const rulePrefix = ["init", "is", "pre", "on", "post", "get", "set"];
+"use strict";
 
-const isValidName = (name, { prefix, exclude }) => {
-    const isValid = (prefix) => name.indexOf(prefix) === 0;
-    return exclude.some(isValid) || prefix.some(isValid);
-};
+function createOrder(context) {
+  const sourceCode = context.getSourceCode();
 
-const onFuncPrefixMatchingCreate = (context) => {
-    const { options } = context;
-    const { include = [], exclude = [] } = options[0] || {};
+  console.log("sourceCode.ast");
 
-    return {
-        Identifier: (node) => {
-            if (
-                node.parent.init &&
-                node.parent.init.type === "ArrowFunctionExpression" // You can add more checks here
-            ) {
-                const { name } = node;
-                const allPrefix = [...include, ...rulePrefix].sort(); // Sorting is optional
-                if (!isValidName(name, { prefix: allPrefix, exclude })) {
-                    context.report(
-                        node,
-                        `${name} should start with ${allPrefix.join(", ")}.`
-                    );
-                }
-            }
+  function reportIssue() {
+    if (sourceCode.lines[17].startsWith("  display")) {
+      context.report({
+        loc: { start: { line: 18, column: 3 }, end: { line: 18, column: 20 } },
+        message: `Attribute 4141 should go before 41414141.`,
+        fix(fixer) {
+          return fixer.replaceTextRange([281, 302], "COUCOU");
         },
-    };
-};
+      });
+    }
+  }
+  reportIssue();
 
-module.exports = { onFuncPrefixMatchingCreate };
+  return {};
+}
+
+module.exports = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description: "enforce order of attributes",
+      categories: ["vue3-recommended", "recommended"],
+      url: "https://eslint.vuejs.org/rules/attributes-order.html",
+    },
+    fixable: "code",
+    schema: [
+      {
+        type: "object",
+        additionalProperties: false,
+      },
+    ],
+  },
+  create: createOrder,
+};

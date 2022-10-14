@@ -1,7 +1,3 @@
-/**
- * @fileoverview enforce ordering of attributes
- * @author Erin Depew
- */
 /* eslint-disable */
 
 "use strict";
@@ -43,15 +39,12 @@ const ATTRS = {
   LIST_RENDERING: "LIST_RENDERING",
   CONDITIONALS: "CONDITIONALS",
   RENDER_MODIFIERS: "RENDER_MODIFIERS",
-  GLOBAL: "GLOBAL",
   UNIQUE: "UNIQUE",
-  SLOT: "SLOT",
   TWO_WAY_BINDING: "TWO_WAY_BINDING",
   OTHER_DIRECTIVES: "OTHER_DIRECTIVES",
   BIND_ATTR: "BIND_ATTR", // :any-bound-prop="..."
   OTHER_ATTR: "OTHER_ATTR", // any-unbound-prop="..."
   BOOL_ATTR: "BOOL_ATTR", // any-boolean-prop
-  CONTENT: "CONTENT",
   EVENTS: "EVENTS",
 };
 
@@ -146,10 +139,6 @@ function getAttributeType(attribute) {
         return ATTRS.TWO_WAY_BINDING;
       } else if (name === "on") {
         return ATTRS.EVENTS;
-      } else if (name === "html" || name === "text") {
-        return ATTRS.CONTENT;
-      } else if (name === "slot") {
-        return ATTRS.SLOT;
       } else if (name === "is") {
         return ATTRS.DEFINITION;
       } else {
@@ -165,22 +154,17 @@ function getAttributeType(attribute) {
   }
   if (propName === "is") {
     return ATTRS.DEFINITION;
-  } else if (propName === "id") {
-    return ATTRS.GLOBAL;
-  } else if (propName === "ref" || propName === "key") {
+  } else if (propName === "key") {
     return ATTRS.UNIQUE;
   } else if (propName === "slot" || propName === "slot-scope") {
     return ATTRS.SLOT;
   } else {
     if (attribute.value === null) {
-      console.log(propName, "bool");
       return ATTRS.BOOL_ATTR;
     }
     if (attribute.key.type === "VDirectiveKey") {
-      console.log(propName, "dind");
       return ATTRS.BIND_ATTR;
     }
-    console.log(propName, "other");
     return ATTRS.OTHER_ATTR;
   }
 }
@@ -219,6 +203,7 @@ function isAlphabetical(prevNode, currNode, sourceCode) {
  */
 function createOrder(context) {
   const sourceCode = context.getSourceCode();
+
   let attributeOrder = [
     ATTRS.CONDITIONALS,
     ATTRS.DEFINITION,
@@ -383,7 +368,6 @@ function createOrder(context) {
 }
 
 // module.exports = { createOrder };
-
 module.exports = {
   meta: {
     type: "suggestion",
