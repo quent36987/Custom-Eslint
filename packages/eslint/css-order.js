@@ -2,12 +2,32 @@
 
 "use strict";
 
+const DEFAULT_LEVEL = 5;
+
 const rules = [
+  ["top", "right", "bottom", "left", "start", "end"],
   ["--[a-z-]*"],
   ["display", "flex-direction", "justify-content", "align-items"],
-  ["position", "top", "right", "margin[a-z-]*"],
-  ["width", "opacity"],
+  ["position", "top", "right", "bottom", "left", "z-index"],
+  [
+    "min-height",
+    "height",
+    "max-height",
+    "min-width",
+    "width",
+    "max-width",
+    "margin[a-z-]*",
+    "padding[a-z-]*",
+  ],
+  [],
+  ["flex", "grid-column-start", "justify-self"],
 ];
+
+const REGEX_CSS_BALISE = /<style (scoped)?>\n((.*\n)*)<\/style>/;
+const REGEX_CSS_PROPERTIES = /[ \ta-z-]*:[^;]*;\n|\n/g;
+const REGEX_CLASS_CSS =
+  /[ \t]*[.#][ a-zA-Z0-9+*.><-]*\{\n((([ a-z-]*:[^;]*;)*\n)*)[ \t]*}/g;
+const REGEX_CSS_CLASS_NAME = /[ \t]*[.#][ a-zA-Z0-9+*.><-]*\{/;
 
 function getPosition(value) {
   for (let level = 0; level < rules.length; level++) {
@@ -24,8 +44,8 @@ function getPosition(value) {
   }
 
   return {
-    level: -1,
-    position: -1,
+    level: DEFAULT_LEVEL,
+    position: 0,
   };
 }
 
@@ -75,22 +95,18 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
   const cssPropertiesSorted = SortCssTab(cssProperties);
   const cssSortedText = cssPropertiesSorted.join("");
 
-  const cssClassMatch = sourceCode.text.match(cssClass);
+  const cssClassName = cssClass.match(REGEX_CSS_CLASS_NAME);
 
-  let indexFirstProperties = 0;
-  while (cssClassMatch[0][indexFirstProperties] !== "{") {
-    indexFirstProperties += 1;
-  }
+  const cssClassNameIndex = sourceCode.text.match(cssClassName);
 
-  const regex = /\.[a-z- ]*{/;
-  const cssClassName = cssClass.match(regex);
+  let indexFirstProperties = cssClassName[0].length;
 
   let line = 0;
   while (
     line < sourceCode.lines.length &&
     sourceCode.lines[line].match(cssClassName[0]) === null
   ) {
-    line += 0;
+    line += 1;
   }
 
   context.report({
@@ -102,8 +118,8 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
     fix(fixer) {
       return fixer.replaceTextRange(
         [
-          cssClassMatch.index + indexFirstProperties + 2,
-          cssClassMatch.index + cssClassMatch[0].length - 1,
+          cssClassNameIndex.index + indexFirstProperties + 1,
+          cssClassNameIndex.index + cssClass.length - 1,
         ],
         cssSortedText
       );
@@ -112,8 +128,7 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
 }
 
 function isValidClass(cssClass, sourceCode, context) {
-  const regexCssProperties = /[ \ta-z-]*:[ \n.()#,a-zA-Z0-9-]*;\n|\n/g;
-  const cssProperties = cssClass.match(regexCssProperties);
+  const cssProperties = cssClass.match(REGEX_CSS_PROPERTIES);
 
   let level = -1;
   let position = 0;
@@ -134,9 +149,7 @@ function isValidClass(cssClass, sourceCode, context) {
       index += 1;
     } else {
       const linePos = getPosition(line);
-      if (-1 === linePos.level || -1 === linePos.position) {
-        console.log("unknow", index, line);
-      } else if (level !== linePos.level || position > linePos.position) {
+      if (level !== linePos.level || position > linePos.position) {
         ReportIssue(cssProperties, cssClass, sourceCode, context, "order");
       } else if (position === linePos.position && index > 1) {
         if (line.localeCompare(cssProperties[index - 1]) === -1) {
@@ -152,15 +165,13 @@ function isValidClass(cssClass, sourceCode, context) {
 function create(context) {
   const sourceCode = context.getSourceCode();
 
-  const regexCssCode = /<style scoped>\n((.*\n)*)<\/style>/;
-  const sourceCodeCss = sourceCode.text.match(regexCssCode);
+  const sourceCodeCss = sourceCode.text.match(REGEX_CSS_BALISE);
 
   if (sourceCodeCss === null) {
     return {};
   }
 
-  const regexClassCss = /\.[ a-z-]*\{\n((([ a-z-]*:[ \n()a-z.0-9-]*;)*\n)*)}/g;
-  const cssClasses = sourceCodeCss[0].match(regexClassCss);
+  const cssClasses = sourceCodeCss[0].match(REGEX_CLASS_CSS);
 
   for (let i = 0; i < cssClasses.length; i++) {
     isValidClass(cssClasses[i], sourceCode, context);
