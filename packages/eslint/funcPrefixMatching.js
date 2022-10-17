@@ -6,6 +6,7 @@ const rules = [
   ["--[a-z-]*"],
   ["display", "flex-direction", "justify-content", "align-items"],
   ["position", "top", "right", "margin[a-z-]*"],
+  ["width", "opacity"],
 ];
 
 function getPosition(value) {
@@ -28,8 +29,8 @@ function getPosition(value) {
   };
 }
 
-// objectA < objectB => true
-function sortClass(objectA, objectB) {
+// objectA < objectB => -1 otherwise 1
+function SortCssObjet(objectA, objectB) {
   if (objectA.level !== objectB.level) {
     return objectA.level < objectB.level ? -1 : 1;
   }
@@ -41,56 +42,79 @@ function sortClass(objectA, objectB) {
   return objectA.position < objectB.position ? -1 : 1;
 }
 
-function getTabSorted(tab) {
-  const tabfilter = tab.filter((value) => value !== "\n");
+// get ['  display:xx;','  flex:xxx;'] and return same sorted
+function SortCssTab(cssTab) {
+  const withoutBackSpace = cssTab.filter((value) => value !== "\n");
 
-  const objetTab = tabfilter.map((value) => {
+  const CssObjects = withoutBackSpace.map((value) => {
     return { ...getPosition(value), value };
   });
 
-  const sorted = objetTab.sort((obj1, obj2) => {
-    return sortClass(obj1, obj2);
+  const CssObjectsSorted = CssObjects.sort((obj1, obj2) => {
+    return SortCssObjet(obj1, obj2);
   });
 
-  console.log("sorted", sorted);
+  // add \n between level
+  const withBackSpace = [];
+
+  for (let i = 0; i < CssObjectsSorted.length; i++) {
+    withBackSpace.push(CssObjectsSorted[i].value);
+
+    if (
+      i < CssObjectsSorted.length - 1 &&
+      CssObjectsSorted[i].level !== CssObjectsSorted[i + 1].level
+    ) {
+      withBackSpace.push("\n");
+    }
+  }
+
+  return withBackSpace;
 }
 
-function createOrder(context) {
-  const sourceCode = context.getSourceCode();
+function ReportIssue() {
+  const sorted = SortCssTab(cssProperties);
 
-  // console.log("sourceCode.ast",sourceCode);
-  const regex = /<style scoped>\n((.*\n)*)<\/style>/;
-  const test = sourceCode.text.match(regex);
-  //console.log("test",test[0]);
-  const regex1 = /\.[ a-z-]*\{\n((([ a-z-]*:[ \n()a-z.0-9-]*;)*\n)*)}/g;
-  const test1 = test[0].match(regex1);
+  const classstring = sorted.join("");
 
-  //console.log(test1);
+  const debut = sourceCode.text.match(test1[0]);
+  console.log("where", sourceCode.text.match(test1[0]));
+  let finddebut = 0;
+  while (debut[0][finddebut] !== "{") {
+    finddebut += 1;
+  }
 
-  //console.log('where',sourceCode.text.match(test1[0]));
+  console.log("placec:", [
+    debut.index + finddebut + 1,
+    debut.index + debut[0].length,
+  ]);
 
-  const myclass = [];
+  if (sourceCode.lines[18].startsWith("  display")) {
+    context.report({
+      loc: { start: { line: 18, column: 3 }, end: { line: 18, column: 20 } },
+      message: `Attribute 4141 should go before 41414141.`,
+      fix(fixer) {
+        return fixer.replaceTextRange(
+          [debut.index + finddebut + 2, debut.index + debut[0].length - 1],
+          classstring
+        );
+      },
+    });
+  }
+}
 
-  const regex_attribu = /[ \ta-z-]*:[ \n.()a-z0-9-]*;\n|\n/g;
-
-  const classTab = test1[0].match(regex_attribu);
-  console.log(classTab);
-
-  // trie le tab => si pas de modif, suivant, sinon error + fix :}
+function isValidClass(cssClass) {
+  const regexCssProperties = /[ \ta-z-]*:[ \n.()a-z0-9-]*;\n|\n/g;
+  const cssProperties = cssClass.match(regexCssProperties);
 
   let level = -1;
   let position = 0;
 
   let index = 0;
+  while (index < cssProperties.length) {
+    const line = cssProperties[index];
 
-  getTabSorted(classTab);
-  return {};
-
-  while (index < classTab.length) {
-    const line = classTab[index];
-
-    if (line === "\n" && index + 1 < classTab.length) {
-      const nextLine = getPosition(classTab[index + 1]);
+    if (line === "\n" && index + 1 < cssProperties.length) {
+      const nextLine = getPosition(cssProperties[index + 1]);
 
       if (level !== -1 && nextLine.level === level) {
         console.log("error backspace", index);
@@ -106,7 +130,7 @@ function createOrder(context) {
       } else if (level !== linePos.level || position > linePos.position) {
         console.log("error strong place", index, line);
       } else if (position === linePos.position && index > 1) {
-        if (line.localeCompare(classTab[index - 1]) === -1) {
+        if (line.localeCompare(cssProperties[index - 1]) === -1) {
           console.log("error strong place alphabetic", index, line);
         }
       }
@@ -114,19 +138,20 @@ function createOrder(context) {
     }
     index += 1;
   }
+}
 
-  /*function reportIssue() {
-    if (sourceCode.lines[17].startsWith("  display")) {
-      context.report({
-        loc: { start: { line: 18, column: 3 }, end: { line: 18, column: 20 } },
-        message: `Attribute 4141 should go before 41414141.`,
-        fix(fixer) {
-          return fixer.replaceTextRange([281, 302], "COUCOU");
-        },
-      });
-    }
+function create(context) {
+  const sourceCode = context.getSourceCode();
+
+  const regexCssCode = /<style scoped>\n((.*\n)*)<\/style>/;
+  const sourceCodeCss = sourceCode.text.match(regexCssCode);
+
+  const regexClassCss = /\.[ a-z-]*\{\n((([ a-z-]*:[ \n()a-z.0-9-]*;)*\n)*)}/g;
+  const cssClasses = sourceCodeCss[0].match(regexClassCss);
+
+  for (let i = 0; i < cssClasses.length; i++) {
+    isValidClass(cssClasses[i]);
   }
-  reportIssue();*/
 
   return {};
 }
@@ -135,9 +160,7 @@ module.exports = {
   meta: {
     type: "suggestion",
     docs: {
-      description: "enforce order of attributes",
-      categories: ["vue3-recommended", "recommended"],
-      url: "https://eslint.vuejs.org/rules/attributes-order.html",
+      description: "enforce order of css",
     },
     fixable: "code",
     schema: [
@@ -147,5 +170,5 @@ module.exports = {
       },
     ],
   },
-  create: createOrder,
+  create: create,
 };

@@ -30,6 +30,9 @@
 
 .v-icon.square {
   width: 1em;
+  top: oui;
+  margin-right: auto;
+  margin-bottom: initial;
 }
 
 .v-icon > .inactive {
