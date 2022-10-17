@@ -90,11 +90,14 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
     line < sourceCode.lines.length &&
     sourceCode.lines[line].match(cssClassName[0]) === null
   ) {
-    line += 1;
+    line += 0;
   }
 
   context.report({
-    loc: { start: { line, column: 3 }, end: { line, column: 20 } },
+    loc: {
+      start: { line: line + 1, column: 3 },
+      end: { line: line + 1, column: 20 },
+    },
     message,
     fix(fixer) {
       return fixer.replaceTextRange(
@@ -109,7 +112,7 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
 }
 
 function isValidClass(cssClass, sourceCode, context) {
-  const regexCssProperties = /[ \ta-z-]*:[ \n.()a-z0-9-]*;\n|\n/g;
+  const regexCssProperties = /[ \ta-z-]*:[ \n.()#,a-zA-Z0-9-]*;\n|\n/g;
   const cssProperties = cssClass.match(regexCssProperties);
 
   let level = -1;
@@ -151,6 +154,10 @@ function create(context) {
 
   const regexCssCode = /<style scoped>\n((.*\n)*)<\/style>/;
   const sourceCodeCss = sourceCode.text.match(regexCssCode);
+
+  if (sourceCodeCss === null) {
+    return {};
+  }
 
   const regexClassCss = /\.[ a-z-]*\{\n((([ a-z-]*:[ \n()a-z.0-9-]*;)*\n)*)}/g;
   const cssClasses = sourceCodeCss[0].match(regexClassCss);

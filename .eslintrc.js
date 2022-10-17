@@ -4,7 +4,7 @@ module.exports = {
   plugins: ["my-lint"],
   rules: {
     "no-undef": 0,
-    "my-lint/func-prefix-matching": "error",
+    "my-lint/css-order": "error",
     "my-lint/attribute-order-template": [
       "error",
       {
