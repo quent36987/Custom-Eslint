@@ -13,14 +13,19 @@
 
 <script lang="ts"></script>
 
-<style>
+<style scoped>
 .v-icon {
-  display: inline-flex;
   flex-direction: row;
+  display: inline-flex;
+
   justify-content: center;
   align-items: center;
 
-  height: 1em;
+  position: 1em;
+  right: dsf;
+  top: oui;
+  margin-right: auto;
+  margin-bottom: initial;
 }
 
 .v-icon.square {
