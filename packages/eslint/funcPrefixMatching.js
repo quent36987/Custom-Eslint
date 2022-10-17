@@ -71,38 +71,44 @@ function SortCssTab(cssTab) {
   return withBackSpace;
 }
 
-function ReportIssue() {
-  const sorted = SortCssTab(cssProperties);
+function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
+  const cssPropertiesSorted = SortCssTab(cssProperties);
+  const cssSortedText = cssPropertiesSorted.join("");
 
-  const classstring = sorted.join("");
+  const cssClassMatch = sourceCode.text.match(cssClass);
 
-  const debut = sourceCode.text.match(test1[0]);
-  console.log("where", sourceCode.text.match(test1[0]));
-  let finddebut = 0;
-  while (debut[0][finddebut] !== "{") {
-    finddebut += 1;
+  let indexFirstProperties = 0;
+  while (cssClassMatch[0][indexFirstProperties] !== "{") {
+    indexFirstProperties += 1;
   }
 
-  console.log("placec:", [
-    debut.index + finddebut + 1,
-    debut.index + debut[0].length,
-  ]);
+  const regex = /\.[a-z- ]*{/;
+  const cssClassName = cssClass.match(regex);
 
-  if (sourceCode.lines[18].startsWith("  display")) {
-    context.report({
-      loc: { start: { line: 18, column: 3 }, end: { line: 18, column: 20 } },
-      message: `Attribute 4141 should go before 41414141.`,
-      fix(fixer) {
-        return fixer.replaceTextRange(
-          [debut.index + finddebut + 2, debut.index + debut[0].length - 1],
-          classstring
-        );
-      },
-    });
+  let line = 0;
+  while (
+    line < sourceCode.lines.length &&
+    sourceCode.lines[line].match(cssClassName[0]) === null
+  ) {
+    line += 1;
   }
+
+  context.report({
+    loc: { start: { line, column: 3 }, end: { line, column: 20 } },
+    message,
+    fix(fixer) {
+      return fixer.replaceTextRange(
+        [
+          cssClassMatch.index + indexFirstProperties + 2,
+          cssClassMatch.index + cssClassMatch[0].length - 1,
+        ],
+        cssSortedText
+      );
+    },
+  });
 }
 
-function isValidClass(cssClass) {
+function isValidClass(cssClass, sourceCode, context) {
   const regexCssProperties = /[ \ta-z-]*:[ \n.()a-z0-9-]*;\n|\n/g;
   const cssProperties = cssClass.match(regexCssProperties);
 
@@ -117,7 +123,7 @@ function isValidClass(cssClass) {
       const nextLine = getPosition(cssProperties[index + 1]);
 
       if (level !== -1 && nextLine.level === level) {
-        console.log("error backspace", index);
+        ReportIssue(cssProperties, cssClass, sourceCode, context, "backspace");
       }
 
       level = nextLine.level;
@@ -128,10 +134,10 @@ function isValidClass(cssClass) {
       if (-1 === linePos.level || -1 === linePos.position) {
         console.log("unknow", index, line);
       } else if (level !== linePos.level || position > linePos.position) {
-        console.log("error strong place", index, line);
+        ReportIssue(cssProperties, cssClass, sourceCode, context, "order");
       } else if (position === linePos.position && index > 1) {
         if (line.localeCompare(cssProperties[index - 1]) === -1) {
-          console.log("error strong place alphabetic", index, line);
+          ReportIssue(cssProperties, cssClass, sourceCode, context, "order");
         }
       }
       position = linePos.position;
@@ -150,7 +156,7 @@ function create(context) {
   const cssClasses = sourceCodeCss[0].match(regexClassCss);
 
   for (let i = 0; i < cssClasses.length; i++) {
-    isValidClass(cssClasses[i]);
+    isValidClass(cssClasses[i], sourceCode, context);
   }
 
   return {};
