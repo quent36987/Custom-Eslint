@@ -31,6 +31,8 @@ const REGEX_CLASS_CSS =
   /[ \t]*[.#][ a-zA-Z0-9+*.><-]*\{\n((([ a-z-]*:[^;]*;)*\n)*)[ \t]*}/g;
 const REGEX_CSS_CLASS_NAME = /[ \t]*[.#][ a-zA-Z0-9+*.><-]*\{/;
 
+// return { position, value } in default order if match with one
+// example : getDefaultPos(margin-top) => { 0, "margin-" }
 function getDefaultPos(value) {
   for (let i = 0; i < defaultOrder.length; i++) {
     if (value.match(defaultOrder[i])) {
@@ -45,6 +47,7 @@ function getDefaultPos(value) {
   return { position: -1 };
 }
 
+// return {level, position } if match with rules {defaultLevel, 0} otherwise
 function getPosition(value) {
   for (let level = 0; level < rules.length; level++) {
     for (let pos = 0; pos < rules[level].length; pos++) {
@@ -87,7 +90,7 @@ function SortCssObjet(objectA, objectB) {
   return objectA.value.localeCompare(objectB.value) === -1;
 }
 
-// get ['  display:xx;','  flex:xxx;'] and return same sorted
+// get ['  display:xx;','  flex:xxx;'] and return same sorted with backspace between level
 function SortCssTab(cssTab) {
   const withoutBackSpace = cssTab.filter((value) => value !== "\n");
 
@@ -117,15 +120,16 @@ function SortCssTab(cssTab) {
 }
 
 function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
+  // we create a string with all the property in the right order
   const cssPropertiesSorted = SortCssTab(cssProperties);
   const cssSortedText = cssPropertiesSorted.join("");
 
+  // we need to find the range of the css class to replace all the property by "cssSortedText"
   const cssClassName = cssClass.match(REGEX_CSS_CLASS_NAME);
-
   const cssClassNameIndex = sourceCode.text.match(cssClassName);
-
   let indexFirstProperties = cssClassName[0].length;
 
+  // we need to find the line of the css class declaration to put a error message
   let line = 0;
   while (
     line < sourceCode.lines.length &&
@@ -134,6 +138,7 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
     line += 1;
   }
 
+  // send the error with a fix
   context.report({
     loc: {
       start: { line: line + 1, column: 3 },
@@ -152,6 +157,13 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
   });
 }
 
+// get the property name : getPropertyName("bla-bla:xxxx") => "bla-bla:"
+function getPropertyName(value) {
+  const name = value.match(/[^:]*:/);
+  return name ? name[0] : value;
+}
+
+// verify all property, if one is not in the right order, send an error
 function isValidClass(cssClass, sourceCode, context) {
   const cssProperties = cssClass.match(REGEX_CSS_PROPERTIES);
 
@@ -162,11 +174,18 @@ function isValidClass(cssClass, sourceCode, context) {
   while (index < cssProperties.length) {
     const line = cssProperties[index];
 
-    if (line === "\n" && index + 1 < cssProperties.length) {
+    if (line === "\n") {
+      if (index + 1 === cssProperties.length) {
+        ReportIssue(cssProperties, cssClass, sourceCode, context, "backspace");
+      }
+
       const nextLine = getPosition(cssProperties[index + 1]);
 
-      if (level !== -1 && nextLine.level === level) {
-        ReportIssue(cssProperties, cssClass, sourceCode, context, "backspace");
+      if (level !== -1 && nextLine.level <= level) {
+        const message = `backspace [${getPropertyName(
+          cssProperties[index + 1]
+        )}}]`;
+        ReportIssue(cssProperties, cssClass, sourceCode, context, message);
       }
 
       level = nextLine.level;
@@ -176,20 +195,25 @@ function isValidClass(cssClass, sourceCode, context) {
       const linePos = getPosition(line);
 
       if (level !== linePos.level || position > linePos.position) {
-        ReportIssue(cssProperties, cssClass, sourceCode, context, "order");
+        const message = `order [${getPropertyName(line)}]`;
+        ReportIssue(cssProperties, cssClass, sourceCode, context, message);
       } else if (position === linePos.position && index > 1) {
         const ObjetA = {
           ...getPosition(cssProperties[index - 1]),
           value: cssProperties[index - 1],
         };
+
         const ObjetB = { ...linePos, value: line };
 
         if (!SortCssObjet(ObjetA, ObjetB)) {
-          ReportIssue(cssProperties, cssClass, sourceCode, context, "order");
+          const message = `order [${getPropertyName(line)}]`;
+          ReportIssue(cssProperties, cssClass, sourceCode, context, message);
         }
       }
+
       position = linePos.position;
     }
+
     index += 1;
   }
 }

@@ -1,5 +1,5 @@
 module.exports = {
-  extends: ["plugin:vue/essential", "eslint:recommended"],
+  extends: ["plugin:vue/essential", "eslint:recommended", "@vue/prettier"],
   parserOptions: { project: "./tsconfig.json" },
   plugins: ["my-lint"],
   rules: {
@@ -24,7 +24,7 @@ module.exports = {
             "padding[a-z-]*",
           ],
           [],
-          ["flex", "grid-column-start", "justify-self"],
+          ["flex", "grid-column-start", "grid-column-end", "justify-self"],
         ],
       },
     ],
@@ -45,5 +45,6 @@ module.exports = {
         alphabetical: true,
       },
     ],
+    "space-after-keywords": "error",
   },
 };
