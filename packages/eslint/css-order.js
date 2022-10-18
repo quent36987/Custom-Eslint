@@ -2,14 +2,14 @@
 
 "use strict";
 
-const DEFAULT_LEVEL = 5;
+let defaultLevel = 4;
 
-const rules = [
-  ["top", "right", "bottom", "left", "start", "end"],
+let rules = [
   ["--[a-z-]*"],
   ["display", "flex-direction", "justify-content", "align-items"],
   ["position", "top", "right", "bottom", "left", "z-index"],
   [
+    "top",
     "min-height",
     "height",
     "max-height",
@@ -23,11 +23,27 @@ const rules = [
   ["flex", "grid-column-start", "justify-self"],
 ];
 
+let defaultOrder = ["top", "right", "bottom", "left", "start", "end"];
+
 const REGEX_CSS_BALISE = /<style (scoped)?>\n((.*\n)*)<\/style>/;
 const REGEX_CSS_PROPERTIES = /[ \ta-z-]*:[^;]*;\n|\n/g;
 const REGEX_CLASS_CSS =
   /[ \t]*[.#][ a-zA-Z0-9+*.><-]*\{\n((([ a-z-]*:[^;]*;)*\n)*)[ \t]*}/g;
 const REGEX_CSS_CLASS_NAME = /[ \t]*[.#][ a-zA-Z0-9+*.><-]*\{/;
+
+function getDefaultPos(value) {
+  for (let i = 0; i < defaultOrder.length; i++) {
+    if (value.match(defaultOrder[i])) {
+      return {
+        position: i,
+        value: value
+          .substring(0, value.match(defaultOrder[i]).index)
+          .replace(/[ \t]*/, ""),
+      };
+    }
+  }
+  return { position: -1 };
+}
 
 function getPosition(value) {
   for (let level = 0; level < rules.length; level++) {
@@ -44,22 +60,31 @@ function getPosition(value) {
   }
 
   return {
-    level: DEFAULT_LEVEL,
+    level: defaultLevel,
     position: 0,
   };
 }
 
-// objectA < objectB => -1 otherwise 1
+// return objectA < objectB
 function SortCssObjet(objectA, objectB) {
   if (objectA.level !== objectB.level) {
-    return objectA.level < objectB.level ? -1 : 1;
+    return objectA.level < objectB.level;
   }
 
-  if (objectA.position === objectB.position) {
-    return objectA.value.localeCompare(objectB.value) === -1 ? -1 : 1;
+  if (objectA.position !== objectB.position) {
+    return objectA.position < objectB.position;
   }
 
-  return objectA.position < objectB.position ? -1 : 1;
+  const defaultObjA = getDefaultPos(objectA.value);
+  const defaultObjB = getDefaultPos(objectB.value);
+
+  if (defaultObjA.position !== -1 && defaultObjB.position !== -1) {
+    if (defaultObjA.value === defaultObjB.value) {
+      return defaultObjA.position < defaultObjB.position;
+    }
+  }
+
+  return objectA.value.localeCompare(objectB.value) === -1;
 }
 
 // get ['  display:xx;','  flex:xxx;'] and return same sorted
@@ -71,7 +96,7 @@ function SortCssTab(cssTab) {
   });
 
   const CssObjectsSorted = CssObjects.sort((obj1, obj2) => {
-    return SortCssObjet(obj1, obj2);
+    return SortCssObjet(obj1, obj2) ? -1 : 1;
   });
 
   // add \n between level
@@ -149,10 +174,17 @@ function isValidClass(cssClass, sourceCode, context) {
       index += 1;
     } else {
       const linePos = getPosition(line);
+
       if (level !== linePos.level || position > linePos.position) {
         ReportIssue(cssProperties, cssClass, sourceCode, context, "order");
       } else if (position === linePos.position && index > 1) {
-        if (line.localeCompare(cssProperties[index - 1]) === -1) {
+        const ObjetA = {
+          ...getPosition(cssProperties[index - 1]),
+          value: cssProperties[index - 1],
+        };
+        const ObjetB = { ...linePos, value: line };
+
+        if (!SortCssObjet(ObjetA, ObjetB)) {
           ReportIssue(cssProperties, cssClass, sourceCode, context, "order");
         }
       }
@@ -164,6 +196,16 @@ function isValidClass(cssClass, sourceCode, context) {
 
 function create(context) {
   const sourceCode = context.getSourceCode();
+
+  if (context.options[0].order) {
+    rules = context.options[0].order;
+  }
+  if (context.options[0].default) {
+    defaultLevel = context.options[0].default;
+  }
+  if (context.options[0].defaultOrder) {
+    defaultOrder = context.options[0].defaultOrder;
+  }
 
   const sourceCodeCss = sourceCode.text.match(REGEX_CSS_BALISE);
 
@@ -190,7 +232,21 @@ module.exports = {
     schema: [
       {
         type: "object",
-        additionalProperties: false,
+        properties: {
+          default: {
+            type: "number",
+          },
+          defaultOrder: {
+            type: "array",
+            uniqueItems: true,
+            additionalItems: true,
+          },
+          order: {
+            type: "array",
+            uniqueItems: true,
+            additionalItems: true,
+          },
+        },
       },
     ],
   },
