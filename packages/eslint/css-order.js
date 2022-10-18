@@ -26,10 +26,10 @@ let rules = [
 let defaultOrder = ["top", "right", "bottom", "left", "start", "end"];
 
 const REGEX_CSS_BALISE = /<style (scoped)?>\n((.*\n)*)<\/style>/;
-const REGEX_CSS_PROPERTIES = /[ \ta-z-]*:[^;]*;\n|\n/g;
+const REGEX_CSS_PROPERTIES = /[ \ta-z-]*:[^;{}]*;\n|\n/g;
 const REGEX_CLASS_CSS =
-  /[ \t]*[.#][ a-zA-Z0-9+*.><-]*\{\n((([ a-z-]*:[^;]*;)*\n)*)[ \t]*}/g;
-const REGEX_CSS_CLASS_NAME = /[ \t]*[.#][ a-zA-Z0-9+*.><-]*\{/;
+  /[ \t]*[.#@][^\n{]*\{\n((([ a-z-]*:[^;}]*;)*\n)*)[ \t]*}/g;
+const REGEX_CSS_CLASS_NAME = /[ \t]*[.#@][^\n{]*\{/;
 
 // return { position, value } in default order if match with one
 // example : getDefaultPos(margin-top) => { 0, "margin-" }
@@ -49,6 +49,13 @@ function getDefaultPos(value) {
 
 // return {level, position } if match with rules {defaultLevel, 0} otherwise
 function getPosition(value) {
+  if (!value) {
+    return {
+      level: defaultLevel,
+      position: 0,
+    };
+  }
+
   for (let level = 0; level < rules.length; level++) {
     for (let pos = 0; pos < rules[level].length; pos++) {
       const regexPrefix = `^[ \t]*${rules[level][pos]}:`;
@@ -126,7 +133,9 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
 
   // we need to find the range of the css class to replace all the property by "cssSortedText"
   const cssClassName = cssClass.match(REGEX_CSS_CLASS_NAME);
-  const cssClassNameIndex = sourceCode.text.match(cssClassName);
+  const cssClassNameIndex = sourceCode.text.match(
+    cssClassName[0].replace(/([*+])/, "\\$1")
+  );
   let indexFirstProperties = cssClassName[0].length;
 
   // we need to find the line of the css class declaration to put a error message
@@ -160,12 +169,16 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
 // get the property name : getPropertyName("bla-bla:xxxx") => "bla-bla:"
 function getPropertyName(value) {
   const name = value.match(/[^:]*:/);
-  return name ? name[0] : value;
+  return name ? name[0].replace(/[ \t]*/, "") : value;
 }
 
 // verify all property, if one is not in the right order, send an error
 function isValidClass(cssClass, sourceCode, context) {
   const cssProperties = cssClass.match(REGEX_CSS_PROPERTIES);
+
+  if (cssProperties === null || cssProperties.length <= 1) {
+    return {};
+  }
 
   let level = -1;
   let position = 0;

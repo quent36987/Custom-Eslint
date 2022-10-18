@@ -45,6 +45,5 @@ module.exports = {
         alphabetical: true,
       },
     ],
-    "space-after-keywords": "error",
   },
 };
