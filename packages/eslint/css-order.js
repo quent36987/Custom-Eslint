@@ -133,9 +133,16 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
 
   // we need to find the range of the css class to replace all the property by "cssSortedText"
   const cssClassName = cssClass.match(REGEX_CSS_CLASS_NAME);
+  if (!cssClassName) {
+    return;
+  }
+
   const cssClassNameIndex = sourceCode.text.match(
     cssClassName[0].replace(/([*+])/, "\\$1")
   );
+  if (!cssClassNameIndex) {
+    return;
+  }
   let indexFirstProperties = cssClassName[0].length;
 
   // we need to find the line of the css class declaration to put a error message

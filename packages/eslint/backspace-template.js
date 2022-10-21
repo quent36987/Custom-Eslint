@@ -34,7 +34,6 @@ function createOrder(context) {
       if (!node.parent.children) {
         return {};
       }
-      console.log("new child", node.loc, node.parent.children.length);
 
       // if juste 2 big childs
       if (node.parent.children.length === 5) {
@@ -60,8 +59,6 @@ function createOrder(context) {
       //other case
       for (let i = 2; i < node.parent.children.length - 2; i++) {
         const child = node.parent.children[i];
-
-        console.log(child.loc);
 
         if (!child.value && child.loc.start.line !== child.loc.end.line) {
           const prev = node.parent.children[i - 1];
