@@ -47,7 +47,7 @@ function createOrder(context) {
           if (!mid.value || !mid.value.match(/\n[ \t]*\n/)) {
             context.report({
               node: prev,
-              message: "backSpace after block",
+              message: "backspace after block",
               fix(fixer) {
                 return fixer.insertTextAfter(prev, "\n");
               },
@@ -65,7 +65,7 @@ function createOrder(context) {
           if (!prev.value || !prev.value.match(/\n[ \t]*\n/)) {
             context.report({
               node: child,
-              message: "backSpace before block",
+              message: "backspace before block",
               fix(fixer) {
                 return fixer.insertTextBefore(child, "\n");
               },
@@ -76,7 +76,7 @@ function createOrder(context) {
           if (!next.value || !next.value.match(/\n[ \t]*\n/)) {
             context.report({
               node: child,
-              message: "backSpace after block",
+              message: "backspace after block",
               fix(fixer) {
                 return fixer.insertTextAfter(child, "\n");
               },

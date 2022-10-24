@@ -133,6 +133,7 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
 
   // we need to find the range of the css class to replace all the property by "cssSortedText"
   const cssClassName = cssClass.match(REGEX_CSS_CLASS_NAME);
+
   if (!cssClassName) {
     return;
   }
@@ -140,13 +141,16 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
   const cssClassNameIndex = sourceCode.text.match(
     cssClassName[0].replace(/([*+])/, "\\$1")
   );
+
   if (!cssClassNameIndex) {
     return;
   }
+
   let indexFirstProperties = cssClassName[0].length;
 
   // we need to find the line of the css class declaration to put a error message
   let line = 0;
+
   while (
     line < sourceCode.lines.length &&
     sourceCode.lines[line].match(cssClassName[0]) === null
@@ -205,6 +209,7 @@ function isValidClass(cssClass, sourceCode, context) {
         const message = `backspace [${getPropertyName(
           cssProperties[index + 1]
         )}}]`;
+
         ReportIssue(cssProperties, cssClass, sourceCode, context, message);
       }
 
@@ -244,9 +249,11 @@ function create(context) {
   if (context.options[0].order) {
     rules = context.options[0].order;
   }
+
   if (context.options[0].default) {
     defaultLevel = context.options[0].default;
   }
+
   if (context.options[0].defaultOrder) {
     defaultOrder = context.options[0].defaultOrder;
   }

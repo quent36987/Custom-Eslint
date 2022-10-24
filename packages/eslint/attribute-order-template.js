@@ -294,7 +294,6 @@ function createOrder(context) {
         attributeAndPositions[0];
       for (let index = 1; index < attributeAndPositions.length; index++) {
         const { attr, position } = attributeAndPositions[index];
-
         let valid = previousPosition <= position;
         if (valid && alphabetical && previousPosition === position) {
           valid = isAlphabetical(previousNode, attr, sourceCode);
@@ -355,7 +354,6 @@ function createOrder(context) {
         const len = attributes.length;
         for (let nextIndex = index + 1; nextIndex < len; nextIndex++) {
           const next = attributes[nextIndex];
-
           if (isVAttributeOrVBind(next) && !isVBindObject(next)) {
             // It is considered to be in the same order as the next bind prop node.
             return getPositionFromAttrIndex(nextIndex);
