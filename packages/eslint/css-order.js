@@ -94,7 +94,11 @@ function SortCssObjet(objectA, objectB) {
     }
   }
 
-  return objectA.value.localeCompare(objectB.value) === -1;
+  return (
+    objectA.value
+      .replace(":", " ")
+      .localeCompare(objectB.value.replace(":", " ")) === -1
+  );
 }
 
 // get ['  display:xx;','  flex:xxx;'] and return same sorted with backspace between level
@@ -272,6 +276,9 @@ function create(context) {
   }
 
   const cssClasses = sourceCodeCss[0].match(REGEX_CLASS_CSS);
+  if (cssClasses === null) {
+    return {};
+  }
 
   for (let i = 0; i < cssClasses.length; i++) {
     isValidClass(cssClasses[i], sourceCode, context);

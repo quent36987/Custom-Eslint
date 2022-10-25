@@ -42,19 +42,12 @@ const ATTRS = {
 };
 
 function isVBind(node) {
-  return Boolean(node && node.directive && node.key.name.name === "bind");
-}
-
-function isVAttribute(node) {
-  return Boolean(node && !node.directive);
-}
-
-function isVAttributeOrVBind(node) {
-  return isVAttribute(node) || isVBind(node);
-}
-
-function isVBindObject(node) {
-  return isVBind(node) && node.key.argument == null;
+  return Boolean(
+    node &&
+      node.directive &&
+      node.key.name.name === "bind" &&
+      node.key.argument !== null
+  );
 }
 
 function getAttributeName(attribute, sourceCode) {
@@ -194,29 +187,13 @@ function createOrder(context) {
       fix(fixer) {
         const attributes = node.parent.attributes;
 
-        let isMoveUp;
-
-        if (isVBindObject(node)) {
-          // prev, v-bind:foo, v-bind -> v-bind:foo, v-bind, prev
-          isMoveUp = isVAttributeOrVBind;
-        } else if (isVAttributeOrVBind(node)) {
-          // prev, v-bind, v-bind:foo -> v-bind, v-bind:foo, prev
-          isMoveUp = isVBindObject;
-        } else {
-          isMoveUp = () => false;
-        }
-
         const previousNodes = attributes.slice(
           attributes.indexOf(previousNode),
           attributes.indexOf(node)
         );
         const moveNodes = [node];
         for (const node of previousNodes) {
-          if (isMoveUp(node)) {
-            moveNodes.unshift(node);
-          } else {
-            moveNodes.push(node);
-          }
+          moveNodes.push(node);
         }
 
         return moveNodes.map((moveNode, index) => {
@@ -253,18 +230,7 @@ function createOrder(context) {
   });
 
   function getAttributeAndPositionList(node) {
-    const attributes = node.attributes.filter((node, index, attributes) => {
-      if (
-        isVBindObject(node) &&
-        (isVAttributeOrVBind(attributes[index - 1]) ||
-          isVAttributeOrVBind(attributes[index + 1]))
-      ) {
-        // In Vue 3, ignore the `v-bind:foo=" ... "` and `v-bind ="object"` syntax
-        // as they behave differently if you change the order.
-        return false;
-      }
-      return true;
-    });
+    const attributes = node.attributes;
 
     const results = [];
     for (let index = 0; index < attributes.length; index++) {
@@ -281,21 +247,7 @@ function createOrder(context) {
 
     function getPositionFromAttrIndex(index) {
       const node = attributes[index];
-      if (isVBindObject(node)) {
-        // node is `v-bind ="object"` syntax
 
-        // In Vue 3, if change the order of `v-bind:foo=" ... "` and `v-bind ="object"`,
-        // the behavior will be different, so adjust so that there is no change in behavior.
-
-        const len = attributes.length;
-        for (let nextIndex = index + 1; nextIndex < len; nextIndex++) {
-          const next = attributes[nextIndex];
-          if (isVAttributeOrVBind(next) && !isVBindObject(next)) {
-            // It is considered to be in the same order as the next bind prop node.
-            return getPositionFromAttrIndex(nextIndex);
-          }
-        }
-      }
       return getPosition(node, attributePosition);
     }
   }
