@@ -4,6 +4,8 @@ module.exports = {
   parserOptions: { project: "./tsconfig.json" },
   plugins: ["my-lint"],
   rules: {
+    "my-lint/export-order": "error",
+    "my-lint/export-unique": "error",
     "my-lint/multi-lines-template": "error",
     "my-lint/backspace-template": "error",
     "padding-line-between-statements": [
