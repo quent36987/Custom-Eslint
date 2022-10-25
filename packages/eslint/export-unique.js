@@ -29,9 +29,10 @@ function create(context) {
         if (bodyNode.specifiers.length === 0) {
           handleUseless(context, code, bodyNode);
         } else if (lastExport === null) {
-          lastExport = bodyNode;
           if (!isLastNode) {
             handleLast(context, code, bodyNode);
+          } else {
+            lastExport = bodyNode;
           }
         } else {
           handleMultiple(context, code, bodyNode, lastExport);
@@ -53,7 +54,29 @@ function getFirstValue(code, node, value) {
   });
 }
 
-function getNames(node) {
+function getDeclarationName(node) {
+  switch (node.type) {
+    case "ClassDeclaration":
+    case "FunctionDeclaration":
+    case "TSEnumDeclaration":
+    case "TSInterfaceDeclaration":
+    case "TSTypeAliasDeclaration":
+      return ` ${node.id.name},`;
+    case "VariableDeclaration":
+      let names = "";
+
+      for (const declaration of node.declarations) {
+        names = names.concat(` ${declaration.id.name},`);
+      }
+
+      return names;
+    default:
+      console.log("new type declaration =[", node.type, "]");
+      return null;
+  }
+}
+
+function getSpecifierNames(node) {
   let names = "";
 
   for (const specifier of node.specifiers) {
@@ -69,10 +92,13 @@ function handleDirect(context, code, node, lastExport) {
     message: "no direct export allowed",
     *fix(fixer) {
       const EXPORT_TOKEN = getFirstValue(code, node, "export");
+      const NAME = getDeclarationName(node.declaration);
+
+      if (NAME === null) {
+        return;
+      }
 
       yield fixer.remove(EXPORT_TOKEN);
-
-      const NAME = ` ${node.declaration.id.name},`;
 
       yield addExport(code, fixer, lastExport, NAME);
     },
@@ -88,7 +114,7 @@ function handleFrom(context, code, node, lastExport) {
 
       yield fixer.replaceText(EXPORT_TOKEN, "import");
 
-      yield addExport(code, fixer, lastExport, getNames(node));
+      yield addExport(code, fixer, lastExport, getSpecifierNames(node));
     },
   });
 }
@@ -99,12 +125,6 @@ function handleLast(context, code, node) {
     message: "export should always be at the end",
     *fix(fixer) {
       yield fixer.remove(node);
-
-      console.log(`code =${code.getText(node)}`);
-      console.log(code.ast.body.length - 1, code.ast.body);
-      console.log(
-        `code2 =${code.getText(code.ast.body[code.ast.body.length - 1])}`
-      );
 
       yield fixer.insertTextAfter(
         code.ast.body[code.ast.body.length - 1],
@@ -123,7 +143,7 @@ function handleMultiple(context, code, node, lastExport) {
 
       yield fixer.insertTextAfter(
         getFirstValue(code, lastExport, "{"),
-        getNames(node)
+        getSpecifierNames(node)
       );
     },
   });

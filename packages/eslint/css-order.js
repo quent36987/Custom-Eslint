@@ -138,9 +138,16 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
     return;
   }
 
-  const cssClassNameIndex = sourceCode.text.match(
-    cssClassName[0].replace(/([*+])/, "\\$1")
-  );
+  const ClassName = cssClassName[0].replace(/([*+])/, "\\$1");
+
+  // check if only one class has this name in the file
+  const regex = new RegExp(ClassName, "g");
+  const isCssClassSolo = sourceCode.text.match(regex);
+  if (isCssClassSolo !== null && isCssClassSolo.length > 1) {
+    return;
+  }
+
+  const cssClassNameIndex = sourceCode.text.match(ClassName);
 
   if (!cssClassNameIndex) {
     return;
@@ -161,8 +168,8 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
   // send the error with a fix
   context.report({
     loc: {
-      start: { line: line + 1, column: 3 },
-      end: { line: line + 1, column: 20 },
+      start: { line: line + 1, column: 5 },
+      end: { line: line + 1, column: 25 },
     },
     message,
     fix(fixer) {
