@@ -3,13 +3,6 @@
 "use strict";
 const path = require("path");
 
-// ------------------------------------------------------------------------------
-// Rule Definition
-// ------------------------------------------------------------------------------
-
-/**
- * @typedef { VDirective & { key: VDirectiveKey & { name: VIdentifier & { name: 'bind' } } } } VBindDirective
- */
 function defineTemplateBodyVisitor(
   context,
   templateBodyVisitor,
@@ -48,44 +41,22 @@ const ATTRS = {
   EVENTS: "EVENTS",
 };
 
-/**
- * Check whether the given attribute is `v-bind` directive.
- * @param {VAttribute | VDirective | undefined | null} node
- * @returns { node is VBindDirective }
- */
 function isVBind(node) {
   return Boolean(node && node.directive && node.key.name.name === "bind");
 }
-/**
- * Check whether the given attribute is plain attribute.
- * @param {VAttribute | VDirective | undefined | null} node
- * @returns { node is VAttribute }
- */
+
 function isVAttribute(node) {
   return Boolean(node && !node.directive);
 }
-/**
- * Check whether the given attribute is plain attribute or `v-bind` directive.
- * @param {VAttribute | VDirective | undefined | null} node
- * @returns { node is VAttribute }
- */
+
 function isVAttributeOrVBind(node) {
   return isVAttribute(node) || isVBind(node);
 }
 
-/**
- * Check whether the given attribute is `v-bind="..."` directive.
- * @param {VAttribute | VDirective | undefined | null} node
- * @returns { node is VBindDirective }
- */
 function isVBindObject(node) {
   return isVBind(node) && node.key.argument == null;
 }
 
-/**
- * @param {VAttribute | VDirective} attribute
- * @param {SourceCode} sourceCode
- */
 function getAttributeName(attribute, sourceCode) {
   if (attribute.directive) {
     if (isVBind(attribute)) {
@@ -100,10 +71,6 @@ function getAttributeName(attribute, sourceCode) {
   }
 }
 
-/**
- * @param {VDirectiveKey} directiveKey
- * @param {SourceCode} sourceCode
- */
 function getDirectiveKeyName(directiveKey, sourceCode) {
   let text = `v-${directiveKey.name.name}`;
   if (directiveKey.argument) {
@@ -115,9 +82,6 @@ function getDirectiveKeyName(directiveKey, sourceCode) {
   return text;
 }
 
-/**
- * @param {VAttribute | VDirective} attribute
- */
 function getAttributeType(attribute) {
   let propName;
   if (attribute.directive) {
@@ -169,11 +133,6 @@ function getAttributeType(attribute) {
   }
 }
 
-/**
- * @param {VAttribute | VDirective} attribute
- * @param { { [key: string]: number } } attributePosition
- * @returns {number | null} If the value is null, the order is omitted. Do not force the order.
- */
 function getPosition(attribute, attributePosition) {
   const attributeType = getAttributeType(attribute);
   return attributePosition[attributeType] != null
@@ -181,11 +140,6 @@ function getPosition(attribute, attributePosition) {
     : null;
 }
 
-/**
- * @param {VAttribute | VDirective} prevNode
- * @param {VAttribute | VDirective} currNode
- * @param {SourceCode} sourceCode
- */
 function isAlphabetical(prevNode, currNode, sourceCode) {
   const prevName = getAttributeName(prevNode, sourceCode);
   const currName = getAttributeName(currNode, sourceCode);
@@ -197,10 +151,6 @@ function isAlphabetical(prevNode, currNode, sourceCode) {
   return prevName < currName;
 }
 
-/**
- * @param {RuleContext} context - The rule context.
- * @returns {RuleListener} AST event handlers.
- */
 function createOrder(context) {
   const sourceCode = context.getSourceCode();
 
@@ -222,7 +172,6 @@ function createOrder(context) {
     context.options[0] && context.options[0].alphabetical
   );
 
-  /** @type { { [key: string]: number } } */
   const attributePosition = {};
   attributeOrder.forEach((item, i) => {
     if (Array.isArray(item)) {
@@ -232,10 +181,6 @@ function createOrder(context) {
     } else attributePosition[item] = i;
   });
 
-  /**
-   * @param {VAttribute | VDirective} node
-   * @param {VAttribute | VDirective} previousNode
-   */
   function reportIssue(node, previousNode) {
     const currentNode = sourceCode.getText(node.key);
     const prevNode = sourceCode.getText(previousNode.key);
@@ -249,7 +194,6 @@ function createOrder(context) {
       fix(fixer) {
         const attributes = node.parent.attributes;
 
-        /** @type { (node: VAttribute | VDirective | undefined) => boolean } */
         let isMoveUp;
 
         if (isVBindObject(node)) {
@@ -308,10 +252,6 @@ function createOrder(context) {
     },
   });
 
-  /**
-   * @param {VStartTag} node
-   * @returns { { attr: ( VAttribute | VDirective ), position: number }[] }
-   */
   function getAttributeAndPositionList(node) {
     const attributes = node.attributes.filter((node, index, attributes) => {
       if (
@@ -339,10 +279,6 @@ function createOrder(context) {
 
     return results;
 
-    /**
-     * @param {number} index
-     * @returns {number | null}
-     */
     function getPositionFromAttrIndex(index) {
       const node = attributes[index];
       if (isVBindObject(node)) {
@@ -365,14 +301,11 @@ function createOrder(context) {
   }
 }
 
-// module.exports = { createOrder };
 module.exports = {
   meta: {
     type: "suggestion",
     docs: {
       description: "enforce order of attributes",
-      categories: ["vue3-recommended", "recommended"],
-      url: "https://eslint.vuejs.org/rules/attributes-order.html",
     },
     fixable: "code",
     schema: [
