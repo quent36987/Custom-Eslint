@@ -1,6 +1,4 @@
-/* eslint-disable */
-
-("use strict");
+"use strict";
 const path = require("path");
 
 function defineTemplateBodyVisitor(
@@ -11,15 +9,18 @@ function defineTemplateBodyVisitor(
 ) {
   if (context.parserServices.defineTemplateBodyVisitor == null) {
     const filename = context.getFilename();
+
     if (path.extname(filename) === ".vue") {
       context.report({
         loc: { line: 1, column: 0 },
         message:
-          "Use the latest vue-eslint-parser. See also https://eslint.vuejs.org/user-guide/#what-is-the-use-the-latest-vue-eslint-parser-error.",
+          "Use the latest vue-eslint-parser.",
       });
     }
+
     return {};
   }
+
   return context.parserServices.defineTemplateBodyVisitor(
     templateBodyVisitor,
     scriptVisitor,
@@ -79,10 +80,12 @@ function createOrder(context) {
       ) {
         return false;
       }
+
       return true;
     });
 
     const results = [];
+
     for (let index = 0; index < attributes.length; index++) {
       const attr = attributes[index];
       results.push({ attr });

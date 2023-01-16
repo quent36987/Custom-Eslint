@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 "use strict";
 
 let defaultLevel = 4;
@@ -20,15 +18,14 @@ let rules = [
     "padding[a-z-]*",
   ],
   [],
-  ["flex", "grid-column-start", "justify-self"],
+  ["flex", "grid-column-start", "grid-column-end", "justify-self"],
 ];
 
 let defaultOrder = ["top", "right", "bottom", "left", "start", "end"];
 
 const REGEX_CSS_BALISE = /<style (scoped)?>\n((.*\n)*)<\/style>/;
 const REGEX_CSS_PROPERTIES = /[ \ta-z-]*:[^;{}]*;\n|\n/g;
-const REGEX_CLASS_CSS =
-  /[ \t]*[.#@][^\n{]*\{\n((([ a-z-]*:[^;}]*;)*\n)*)[ \t]*}/g;
+const REGEX_CLASS_CSS = /[ \t]*[.#@][^\n{]*\{\n((([ a-z-]*:[^;}]*;)*\n)*)[ \t]*}/g;
 const REGEX_CSS_CLASS_NAME = /[ \t]*[.#@][^\n{]*\{/;
 
 // return { position, value } in default order if match with one
@@ -44,6 +41,7 @@ function getDefaultPos(value) {
       };
     }
   }
+
   return { position: -1 };
 }
 
@@ -147,6 +145,7 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
   // check if only one class has this name in the file
   const regex = new RegExp(ClassName, "g");
   const isCssClassSolo = sourceCode.text.match(regex);
+
   if (isCssClassSolo !== null && isCssClassSolo.length > 1) {
     return;
   }
@@ -165,7 +164,7 @@ function ReportIssue(cssProperties, cssClass, sourceCode, context, message) {
   while (
     line < sourceCode.lines.length &&
     sourceCode.lines[line].match(cssClassName[0]) === null
-  ) {
+    ) {
     line += 1;
   }
 
@@ -206,12 +205,19 @@ function isValidClass(cssClass, sourceCode, context) {
   let position = 0;
 
   let index = 0;
+
   while (index < cssProperties.length) {
     const line = cssProperties[index];
 
     if (line === "\n") {
       if (index + 1 === cssProperties.length) {
-        ReportIssue(cssProperties, cssClass, sourceCode, context, "backspace");
+        ReportIssue(
+          cssProperties,
+          cssClass,
+          sourceCode,
+          context,
+          "backspace"
+        );
       }
 
       const nextLine = getPosition(cssProperties[index + 1]);
@@ -221,7 +227,13 @@ function isValidClass(cssClass, sourceCode, context) {
           cssProperties[index + 1]
         )}}]`;
 
-        ReportIssue(cssProperties, cssClass, sourceCode, context, message);
+        ReportIssue(
+          cssProperties,
+          cssClass,
+          sourceCode,
+          context,
+          message
+        );
       }
 
       level = nextLine.level;
@@ -232,7 +244,13 @@ function isValidClass(cssClass, sourceCode, context) {
 
       if (level !== linePos.level || position > linePos.position) {
         const message = `order [${getPropertyName(line)}]`;
-        ReportIssue(cssProperties, cssClass, sourceCode, context, message);
+        ReportIssue(
+          cssProperties,
+          cssClass,
+          sourceCode,
+          context,
+          message
+        );
       } else if (position === linePos.position && index > 1) {
         const ObjetA = {
           ...getPosition(cssProperties[index - 1]),
@@ -243,7 +261,13 @@ function isValidClass(cssClass, sourceCode, context) {
 
         if (!SortCssObjet(ObjetA, ObjetB)) {
           const message = `order [${getPropertyName(line)}]`;
-          ReportIssue(cssProperties, cssClass, sourceCode, context, message);
+          ReportIssue(
+            cssProperties,
+            cssClass,
+            sourceCode,
+            context,
+            message
+          );
         }
       }
 
@@ -257,16 +281,18 @@ function isValidClass(cssClass, sourceCode, context) {
 function create(context) {
   const sourceCode = context.getSourceCode();
 
-  if (context.options[0].order) {
-    rules = context.options[0].order;
-  }
+  if (context.options[0]) {
+    if (context.options[0].order) {
+      rules = context.options[0].order;
+    }
 
-  if (context.options[0].default) {
-    defaultLevel = context.options[0].default;
-  }
+    if (context.options[0].default) {
+      defaultLevel = context.options[0].default;
+    }
 
-  if (context.options[0].defaultOrder) {
-    defaultOrder = context.options[0].defaultOrder;
+    if (context.options[0].defaultOrder) {
+      defaultOrder = context.options[0].defaultOrder;
+    }
   }
 
   const sourceCodeCss = sourceCode.text.match(REGEX_CSS_BALISE);
@@ -276,6 +302,7 @@ function create(context) {
   }
 
   const cssClasses = sourceCodeCss[0].match(REGEX_CLASS_CSS);
+
   if (cssClasses === null) {
     return {};
   }

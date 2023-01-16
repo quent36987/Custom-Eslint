@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-undef
 module.exports = {
-  extends: ["plugin:vue/essential", "eslint:recommended", "@vue/prettier"],
+  extends: ["eslint:recommended", "@vue/prettier"],
   parserOptions: { project: "./tsconfig.json" },
   plugins: ["my-lint"],
   rules: {

@@ -1,4 +1,3 @@
-/* eslint-disable */
 "use strict";
 const path = require("path");
 
@@ -10,13 +9,14 @@ function defineTemplateBodyVisitor(
 ) {
   if (context.parserServices.defineTemplateBodyVisitor == null) {
     const filename = context.getFilename();
+
     if (path.extname(filename) === ".vue") {
       context.report({
         loc: { line: 1, column: 0 },
-        message:
-          "Use the latest vue-eslint-parser. See also https://eslint.vuejs.org/user-guide/#what-is-the-use-the-latest-vue-eslint-parser-error.",
+        message: "Use the latest vue-eslint-parser.",
       });
     }
+
     return {};
   }
   return context.parserServices.defineTemplateBodyVisitor(
@@ -40,7 +40,8 @@ function createOrder(context) {
         const prev = node.parent.children[1];
         const next = node.parent.children[3];
         if (
-          (!prev.value && prev.loc.start.line !== prev.loc.end.line) ||
+          (!prev.value &&
+            prev.loc.start.line !== prev.loc.end.line) ||
           (!next.value && next.loc.start.line !== next.loc.end.line)
         ) {
           const mid = node.parent.children[2];
@@ -60,7 +61,10 @@ function createOrder(context) {
       for (let i = 2; i < node.parent.children.length - 2; i++) {
         const child = node.parent.children[i];
 
-        if (!child.value && child.loc.start.line !== child.loc.end.line) {
+        if (
+          !child.value &&
+          child.loc.start.line !== child.loc.end.line
+        ) {
           const prev = node.parent.children[i - 1];
           if (!prev.value || !prev.value.match(/\n[ \t]*\n/)) {
             context.report({
@@ -73,6 +77,7 @@ function createOrder(context) {
           }
 
           const next = node.parent.children[i + 1];
+
           if (!next.value || !next.value.match(/\n[ \t]*\n/)) {
             context.report({
               node: child,
